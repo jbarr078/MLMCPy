@@ -147,7 +147,8 @@ class MLMCSimulator(object):
         else:
             return costs, variances
 
-    def compute_optimal_sample_sizes(self, costs, variances, user_epsilon=None):
+    def compute_optimal_sample_sizes(self, costs, variances,
+                                     user_epsilon=None, cached_inputs=None):
         """
         Computes the sample size for each level to be used in simulation.
 
@@ -180,7 +181,10 @@ class MLMCSimulator(object):
             self._show_time_estimate(estimated_runtime)
 
         if user_epsilon is not None:
-            return self._sample_sizes
+            cached_optimal_sample_sizes = \
+                self._compute_cached_optimal_sample_sizes(self._sample_sizes,
+                                                          cached_inputs)
+            return cached_optimal_sample_sizes
 
         return None
     
@@ -195,13 +199,16 @@ class MLMCSimulator(object):
             inputs initialized in compute_costs_and_variances().
         :rtype: list
         """
-        cached_optimal_sample_sizes = []
+        if cached_inputs is not None:
+            cached_optimal_sample_sizes = []
 
-        for i in range(len(sample_sizes)):
-            cached_optimal_sample_sizes.append(sample_sizes[i] - \
-                                               len(cached_inputs[i]))
+            for i in range(len(sample_sizes)):
+                cached_optimal_sample_sizes.append(sample_sizes[i] - \
+                                                len(cached_inputs[i]))
 
-        return cached_optimal_sample_sizes
+            return cached_optimal_sample_sizes
+        else:
+            return sample_sizes
 
     def get_model_inputs_to_run_for_each_level(self, sample_sizes):
         """
