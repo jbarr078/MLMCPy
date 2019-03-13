@@ -32,8 +32,7 @@ def test_modular_costs_and_initial_variances_from_model(spring_mlmc_simulator):
     np.random.seed(1)
 
     initial_sample_sizes = np.array([100,100,100])
-    costs, variances, cached_inputs, cached_outputs = \
-        sim.compute_costs_and_variances(initial_sample_sizes)
+    costs, variances = sim.compute_costs_and_variances(initial_sample_sizes)
 
     true_variances = np.array([[8.245224951411819],
                                [0.0857219498864355],
@@ -56,8 +55,7 @@ def test_modular_costs_and_initial_variances_from_data(data_input,
     sim = MLMCSimulator(models=models_from_data, random_input=data_input)
 
     sample_sizes = np.array([100,100,100])
-    costs, variances, cached_inputs, cached_outputs = \
-        sim.compute_costs_and_variances(sample_sizes)
+    costs, variances = sim.compute_costs_and_variances(sample_sizes)
 
     true_variances = np.array([[9.262628271266264],
                                [0.07939834631411287],
@@ -80,8 +78,7 @@ def test_modular_compute_optimal_sample_sizes_models(spring_mlmc_simulator):
     np.random.seed(1)
 
     initial_sample_sizes = np.array([100,100,100])
-    costs, variances, cached_inputs, cached_outputs = \
-        sim.compute_costs_and_variances(initial_sample_sizes)
+    costs, variances = sim.compute_costs_and_variances(initial_sample_sizes)
     epsilon = np.sqrt(0.00170890122096)
 
     optimal_sample_sizes = sim.compute_optimal_sample_sizes(costs,
@@ -92,7 +89,7 @@ def test_modular_compute_optimal_sample_sizes_models(spring_mlmc_simulator):
 
     assert np.all(np.array_equal(true_optimal_sizes, optimal_sample_sizes))
 
-#Rename this test when function name is decided (TODO)
+
 def test_compute_output_sample_sizes(spring_mlmc_simulator):
     """
     Ensures that _compute_output_sample_sizes() is returning the appropriate
@@ -114,22 +111,6 @@ def test_compute_output_sample_sizes(spring_mlmc_simulator):
     assert sizes[3] == 100
     assert sizes[4] == 50
     assert sizes[5] == 10
-
-
-def test_compute_cached_optima_sample_sizes_simple_3D():
-    sample_sizes = [10, 30, 50]
-    cached_inputs = []
-
-    for i in range(3):
-        cached_inputs.append(np.arange(i*10))
-
-    cached_optimal_sizes = \
-        MLMCSimulator._compute_cached_optimal_sample_sizes(sample_sizes,
-                                                           cached_inputs)
-
-    assert cached_optimal_sizes[0] == 10
-    assert cached_optimal_sizes[1] == 20
-    assert cached_optimal_sizes[2] == 30
 
 
 def test_compute_differences_per_level_array_return_type(spring_mlmc_simulator):

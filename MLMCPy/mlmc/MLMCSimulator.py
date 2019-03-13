@@ -141,14 +141,10 @@ class MLMCSimulator(object):
 
         if self._verbose:
             print 'Initial sample variances: \n%s' % variances
-        
-        if user_sample_size is not None:
-            return costs, variances, self._cached_inputs, self._cached_outputs
-        else:
-            return costs, variances
 
-    def compute_optimal_sample_sizes(self, costs, variances,
-                                     user_epsilon=None, cached_inputs=None):
+        return costs, variances
+
+    def compute_optimal_sample_sizes(self, costs, variances, user_epsilon=None):
         """
         Computes the sample size for each level to be used in simulation.
 
@@ -181,34 +177,9 @@ class MLMCSimulator(object):
             self._show_time_estimate(estimated_runtime)
 
         if user_epsilon is not None:
-            cached_optimal_sample_sizes = \
-                self._compute_cached_optimal_sample_sizes(self._sample_sizes,
-                                                          cached_inputs)
-            return cached_optimal_sample_sizes
+            return self._sample_sizes
 
         return None
-    
-    @staticmethod
-    def _compute_cached_optimal_sample_sizes(sample_sizes, cached_inputs):
-        """
-        Takes the sample sizes and cached_inputs to compute the updated optimal
-        sizes. This is to be used in conjunction with the modular implementation
-        of the compute_optimal_sample_sizes function.
-
-        :return: Returns a list of sample sizes after subtracting the cached
-            inputs initialized in compute_costs_and_variances().
-        :rtype: list
-        """
-        if cached_inputs is not None:
-            cached_optimal_sample_sizes = []
-
-            for i in range(len(sample_sizes)):
-                cached_optimal_sample_sizes.append(sample_sizes[i] - \
-                                                len(cached_inputs[i]))
-
-            return cached_optimal_sample_sizes
-        else:
-            return sample_sizes
 
     def get_model_inputs_to_run_for_each_level(self, sample_sizes):
         """
