@@ -101,7 +101,7 @@ class MLMCSimulator(object):
         # Run models and return estimate, sample sizes, and variances.
         return self._run_simulation()
 
-    def compute_costs_and_variances(self, user_sample_size=None):
+    def compute_costs_and_variances(self, user_sample_size=None, cache=False):
         """
         Computes costs and variances across levels.
 
@@ -142,7 +142,16 @@ class MLMCSimulator(object):
         if self._verbose:
             print 'Initial sample variances: \n%s' % variances
 
+        if cache:
+            self._write_cache_to_file(self._cached_outputs, self._cached_inputs)
+
         return costs, variances
+
+    @staticmethod
+    def _write_cache_to_file(cache_outputs, cache_inputs):
+        np.savetxt('cache_outputs.txt', cache_outputs)
+        np.savetxt('cache_inputs.txt', cache_inputs)
+
 
     def compute_optimal_sample_sizes(self, costs, variances, user_epsilon=None):
         """

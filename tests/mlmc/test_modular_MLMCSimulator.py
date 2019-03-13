@@ -67,6 +67,42 @@ def test_modular_costs_and_initial_variances_from_data(data_input,
     assert np.all(np.isclose(true_variances, variances, rtol=.1))
 
 
+def test_write_cache_to_file():
+    """
+    Ensures the _write_cache_to_file() method is correctly writing the array to
+    text.    
+    """
+    inputs = np.arange(0, 5)
+    outputs = np.arange(5, 10)
+
+    MLMCSimulator._write_cache_to_file(outputs, inputs)
+    cached_inputs = np.genfromtxt('cache_inputs.txt')
+    cached_outputs = np.genfromtxt('cache_outputs.txt')
+
+    assert np.array_equal(cached_inputs, inputs)
+    assert np.array_equal(cached_outputs, outputs)
+
+    os.remove('cache_outputs.txt')
+    os.remove('cache_inputs.txt')
+
+
+def test_modular_compute_costs_and_variances_cache_file(dummy_arange_simulator):
+    """
+    Ensuress the compute_costs_and_variances() method is correctly calling the
+    _write_cache_to_file() method.
+    """
+    sim = dummy_arange_simulator
+    sim.compute_costs_and_variances(10, True)
+    inputs = np.arange(10)
+
+    cached_inputs = np.genfromtxt('cache_inputs.txt')
+
+    assert np.array_equal(cached_inputs[0], inputs)
+
+    os.remove('cache_inputs.txt')
+    os.remove('cache_outputs.txt')
+    
+
 def test_modular_compute_optimal_sample_sizes_models(spring_mlmc_simulator):
     """
     Tests optimal sample sizes computed by simulator's modular
