@@ -183,6 +183,25 @@ class MLMCSimulator(object):
             return self._sample_sizes
 
         return None
+    
+    @staticmethod
+    def _compute_cached_optimal_sample_sizes(sample_sizes, cached_inputs):
+        """
+        Takes the sample sizes and cached_inputs to compute the updated optimal
+        sizes. This is to be used in conjunction with the modular implementation
+        of the compute_optimal_sample_sizes function.
+
+        :return: Returns a list of sample sizes after subtracting the cached
+            inputs initialized in compute_costs_and_variances().
+        :rtype: list
+        """
+        cached_optimal_sample_sizes = []
+
+        for i in range(len(sample_sizes)):
+            cached_optimal_sample_sizes.append(sample_sizes[i] - \
+                                               len(cached_inputs[i]))
+
+        return cached_optimal_sample_sizes
 
     def get_model_inputs_to_run_for_each_level(self, sample_sizes):
         """

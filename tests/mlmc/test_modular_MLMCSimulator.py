@@ -116,6 +116,22 @@ def test_compute_output_sample_sizes(spring_mlmc_simulator):
     assert sizes[5] == 10
 
 
+def test_compute_cached_optima_sample_sizes_simple_3D():
+    sample_sizes = [10, 30, 50]
+    cached_inputs = []
+
+    for i in range(3):
+        cached_inputs.append(np.arange(i*10))
+
+    cached_optimal_sizes = \
+        MLMCSimulator._compute_cached_optimal_sample_sizes(sample_sizes,
+                                                           cached_inputs)
+
+    assert cached_optimal_sizes[0] == 10
+    assert cached_optimal_sizes[1] == 20
+    assert cached_optimal_sizes[2] == 30
+
+
 def test_compute_differences_per_level_array_return_type(spring_mlmc_simulator):
     """
     Ensures that _compute_differences_per_level() is returning the correct
