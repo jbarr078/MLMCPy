@@ -32,7 +32,8 @@ def test_modular_costs_and_initial_variances_from_model(spring_mlmc_simulator):
     np.random.seed(1)
 
     initial_sample_sizes = np.array([100,100,100])
-    costs, variances = sim.compute_costs_and_variances(initial_sample_sizes)
+    costs, variances, cached_inputs, cached_outputs = \
+        sim.compute_costs_and_variances(initial_sample_sizes)
 
     true_variances = np.array([[8.245224951411819],
                                [0.0857219498864355],
@@ -55,7 +56,8 @@ def test_modular_costs_and_initial_variances_from_data(data_input,
     sim = MLMCSimulator(models=models_from_data, random_input=data_input)
 
     sample_sizes = np.array([100,100,100])
-    costs, variances = sim.compute_costs_and_variances(sample_sizes)
+    costs, variances, cached_inputs, cached_outputs = \
+        sim.compute_costs_and_variances(sample_sizes)
 
     true_variances = np.array([[9.262628271266264],
                                [0.07939834631411287],
@@ -78,7 +80,8 @@ def test_modular_compute_optimal_sample_sizes_models(spring_mlmc_simulator):
     np.random.seed(1)
 
     initial_sample_sizes = np.array([100,100,100])
-    costs, variances = sim.compute_costs_and_variances(initial_sample_sizes)
+    costs, variances, cached_inputs, cached_outputs = \
+        sim.compute_costs_and_variances(initial_sample_sizes)
     epsilon = np.sqrt(0.00170890122096)
 
     optimal_sample_sizes = sim.compute_optimal_sample_sizes(costs,

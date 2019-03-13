@@ -141,8 +141,11 @@ class MLMCSimulator(object):
 
         if self._verbose:
             print 'Initial sample variances: \n%s' % variances
-
-        return costs, variances
+        
+        if user_sample_size is not None:
+            return costs, variances, self._cached_inputs, self._cached_outputs
+        else:
+            return costs, variances
 
     def compute_optimal_sample_sizes(self, costs, variances, user_epsilon=None):
         """
