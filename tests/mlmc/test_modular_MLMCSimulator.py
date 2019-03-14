@@ -983,10 +983,49 @@ def test_load_model_outputs_for_each_level_custom_fname(spring_mlmc_simulator):
         os.remove('level%s.txt' % i)
 
 
+def test_load_model_outputs_merge():
+    fname = 'cache_inputs.txt'
+    oname = 'level0_outputs.txt'
+
+    np.savetxt(oname, np.arange(11,21))
+    np.savetxt(fname, np.arange(11))
+
+    outputs = \
+        MLMCSimulator.load_model_outputs_for_each_level(filenames=None,
+                                                        output_cache_file=fname)
+    
+    merged_outputs = np.sort(outputs['level0'])
+
+    assert np.array_equal(merged_outputs, np.arange(21))
+    assert np.mean(outputs['level0']) == 10
+
+    os.remove(fname)
+    os.remove(oname)
+
+
+
 def test_load_model_outputs_for_each_level_exception():
     """
     Ensures that load_model_outputs_for_each_level() throws its exceptions.
     """
     with pytest.raises(TypeError):
         MLMCSimulator.load_model_outputs_for_each_level('Not an Integer.')
+
+
+def test_merge_model_output_with_cache_1D():
+    """
+    Ensures that merge_model_output_with_cache() is properly merging the user
+    evaluated outputs with the cache created by compute_costs_and_variances().
+    """
+    fname = 'cache_outputs.txt'
+    np.savetxt(fname, np.arange(11))
+    outputs = np.arange(11, 21)
+
+    merged_outputs = MLMCSimulator._merge_cache_output(outputs, fname)
+    merged_outputs = np.sort(merged_outputs)
+
+    assert np.array_equal(merged_outputs, np.arange(21))
+    assert np.mean(merged_outputs) == 10
+
+    os.remove(fname)
 
