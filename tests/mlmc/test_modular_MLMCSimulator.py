@@ -75,7 +75,7 @@ def test_write_cache_to_file():
     inputs = np.arange(0, 5)
     outputs = np.arange(5, 10)
 
-    MLMCSimulator._write_cache_to_file(outputs, inputs)
+    MLMCSimulator._write_cache_to_file(True, outputs, inputs)
     cached_inputs = np.genfromtxt('cache_inputs.txt')
     cached_outputs = np.genfromtxt('cache_outputs.txt')
 
@@ -84,6 +84,25 @@ def test_write_cache_to_file():
 
     os.remove('cache_outputs.txt')
     os.remove('cache_inputs.txt')
+
+
+def test_write_cache_to_custom_file():
+    """
+    Ensures the _write_cache_to_file() method is correctly writing to custom
+    file names.   
+    """
+    inputs = np.arange(0, 5)
+    outputs = np.arange(5, 10)
+    cache = ['custom_outputs.txt', 'custom_inputs.txt']
+    MLMCSimulator._write_cache_to_file(cache, outputs, inputs)
+    cached_outputs = np.genfromtxt(cache[0])
+    cached_inputs = np.genfromtxt(cache[1])
+
+    assert np.array_equal(cached_inputs, inputs)
+    assert np.array_equal(cached_outputs, outputs)
+
+    for i in cache:
+        os.remove(i)
 
 
 def test_compare_inputs_to_cache():

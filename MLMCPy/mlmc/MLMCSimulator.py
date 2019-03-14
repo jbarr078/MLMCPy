@@ -143,14 +143,19 @@ class MLMCSimulator(object):
             print 'Initial sample variances: \n%s' % variances
 
         if cache:
-            self._write_cache_to_file(self._cached_outputs, self._cached_inputs)
+            self._write_cache_to_file(cache, self._cached_outputs,
+                                      self._cached_inputs)
 
         return costs, variances
 
     @staticmethod
-    def _write_cache_to_file(cache_outputs, cache_inputs):
-        np.savetxt('cache_outputs.txt', cache_outputs)
-        np.savetxt('cache_inputs.txt', cache_inputs)
+    def _write_cache_to_file(cache, cache_outputs, cache_inputs):
+        if isinstance(cache, list):
+            np.savetxt(cache[0], cache_outputs)
+            np.savetxt(cache[1], cache_inputs)
+        else:
+            np.savetxt('cache_outputs.txt', cache_outputs)
+            np.savetxt('cache_inputs.txt', cache_inputs)
 
     def compute_optimal_sample_sizes(self, costs, variances, user_epsilon=None):
         """
