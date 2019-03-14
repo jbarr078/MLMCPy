@@ -86,6 +86,23 @@ def test_write_cache_to_file():
     os.remove('cache_inputs.txt')
 
 
+def test_compare_inputs_to_cache():
+    """
+    Ensures the _compare_inputs_to_cache() method is properly finding similar
+    values and removing them.
+    """
+    fname = 'cache_inputs.txt'
+    inputs = np.arange(1, 20)
+    np.savetxt(fname, np.arange(1,11).reshape(-1, 2))
+
+    new_inputs, cache_sample_sizes = \
+        MLMCSimulator._compare_inputs_to_cache(inputs, fname)
+
+    assert np.array_equal(new_inputs, np.arange(11, 20))
+
+    os.remove('cache_inputs.txt')
+
+
 def test_modular_compute_costs_and_variances_cache_file(dummy_arange_simulator):
     """
     Ensuress the compute_costs_and_variances() method is correctly calling the
