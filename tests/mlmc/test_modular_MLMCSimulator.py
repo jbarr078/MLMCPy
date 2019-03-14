@@ -1003,7 +1003,7 @@ def test_load_model_outputs_for_each_level_custom_fname(spring_mlmc_simulator):
 
 
 def test_load_model_outputs_merge():
-    fname = 'cache_inputs.txt'
+    fname = 'cache_outputs.txt'
     oname = 'level0_outputs.txt'
 
     np.savetxt(oname, np.arange(11,21))
@@ -1011,7 +1011,7 @@ def test_load_model_outputs_merge():
 
     outputs = \
         MLMCSimulator.load_model_outputs_for_each_level(filenames=None,
-                                                        output_cache_file=fname)
+                                                        cached_outputs=[fname])
     
     merged_outputs = np.sort(outputs['level0'])
 
@@ -1022,6 +1022,29 @@ def test_load_model_outputs_merge():
     os.remove(oname)
 
 
+# def test_load_model_outputs_merge_custom_file():
+#     onames = ['level0_outputs.txt', 'level1_outputs.txt', 'level2_outputs.txt']
+#     fname = 'cache_outputs.txt'
+
+#     np.savetxt(onames[0], np.arange(0, 5))
+#     np.savetxt(onames[1], np.arange(5, 10))
+#     np.savetxt(onames[2], np.arange(10, 15))
+#     np.savetxt(fname, np.arange(15, 30).reshape(-1,3))
+#     merged_array1 = [0, 1, 2, 3, 4, 15, 16, 17, 18, 19]
+#     merged_array1 = [5, 6, 7, 8, 9, 20, 21, 22, 23, 24]
+#     merged_array1 = [10, 11, 12, 13, 14, 25, 26, 27, 28, 29]
+
+#     outputs = \
+#         MLMCSimulator.load_model_outputs_for_each_level(filenames=None,
+#                                                         cached_outputs=fname)
+
+#     assert np.array_equal(outputs['level0'], merged_array1)
+    
+#     for i in onames:
+#         os.remove(i)
+
+#     os.remove(fname)
+
 
 def test_load_model_outputs_for_each_level_exception():
     """
@@ -1031,7 +1054,7 @@ def test_load_model_outputs_for_each_level_exception():
         MLMCSimulator.load_model_outputs_for_each_level('Not an Integer.')
 
 
-def test_merge_model_output_with_cache_1D():
+def test_merge_model_output_with_cache():
     """
     Ensures that merge_model_output_with_cache() is properly merging the user
     evaluated outputs with the cache created by compute_costs_and_variances().
