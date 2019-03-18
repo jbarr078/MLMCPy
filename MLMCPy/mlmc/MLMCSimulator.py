@@ -294,7 +294,7 @@ class MLMCSimulator(object):
 
     @staticmethod
     def load_model_outputs_for_each_level(filenames=None,
-                                          cached_outputs=None):
+                                          cache_file=None):
         """
         Loads model outputs from text files.
 
@@ -311,7 +311,9 @@ class MLMCSimulator(object):
             if isinstance(filenames, list):
                 for level, filename in enumerate(filenames):
                     outputs = np.loadtxt('%s' % filename)
-                    if cached_outputs:
+                    if cache_file:
+                        cached_outputs = np.loadtxt(cache_file)
+
                         outputs = \
                             MLMCSimulator._merge_cache_output(outputs,
                                                         cached_outputs[level])
@@ -325,7 +327,9 @@ class MLMCSimulator(object):
             while True:
                 try:
                     outputs = np.loadtxt('level%s_outputs.txt' % level)
-                    if cached_outputs:
+                    if cache_file:
+                        cached_outputs = np.loadtxt(cache_file)
+                        
                         outputs = \
                           MLMCSimulator._merge_cache_output(outputs,
                                                         cached_outputs[level])
