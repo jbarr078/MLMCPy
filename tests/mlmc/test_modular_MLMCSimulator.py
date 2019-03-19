@@ -144,6 +144,27 @@ def test_remove_unused_cache_outputs():
 
     os.remove(fname)
 
+@pytest.fixture
+def cache_tmpfile(tmpdir):
+    p = tmpdir.mkdir('sub')
+    output_path = str(p.join('cache_outputs.txt'))
+    input_path = str(p.join('cache_inputs.txt'))
+    paths = [output_path, input_path]
+    return paths
+
+
+def test_setup_modular_cache(dummy_arange_simulator, cache_tmpfile):
+    sim = dummy_arange_simulator
+
+    np.savetxt(cache_tmpfile[0], np.arange(18).reshape(3, -1))
+    np.savetxt(cache_tmpfile[1], np.arange(10))
+
+    inputs = np.arange(30)
+    updated_inputs, cache_sample_sizes = \
+        sim._setup_modular_cache(inputs, cache_tmpfile)
+
+    assert np.array_equal(updated_inputs, np.arange(10, 30))
+
 
 def test_modular_compute_costs_and_variances_cache_file(dummy_arange_simulator):
     """
