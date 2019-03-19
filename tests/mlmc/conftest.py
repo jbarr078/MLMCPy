@@ -68,6 +68,7 @@ def beta_distribution_input():
     return RandomInput(distribution_function=beta_distribution,
                        shift=1.0, scale=2.5, alpha=3., beta=2.)
 
+
 @pytest.fixture
 def dummy_arange_random_input():
     """
@@ -184,6 +185,7 @@ def spring_mlmc_simulator(beta_distribution_input, spring_models):
     
     return sim
 
+
 @pytest.fixture
 def dummy_arange_simulator(dummy_arange_random_input, spring_models):
     """
@@ -193,4 +195,12 @@ def dummy_arange_simulator(dummy_arange_random_input, spring_models):
     sim = MLMCSimulator(models=spring_models,
                         random_input=dummy_arange_random_input)
     return sim
-    
+
+ 
+@pytest.fixture
+def cache_tmpfile(tmpdir):
+    p = tmpdir.mkdir('sub')
+    output_path = str(p.join('cache_outputs.txt'))
+    input_path = str(p.join('cache_inputs.txt'))
+    paths = [output_path, input_path]
+    return paths

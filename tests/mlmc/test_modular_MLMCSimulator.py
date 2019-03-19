@@ -123,34 +123,23 @@ def test_compare_inputs_to_cache():
     os.remove('cache_inputs.txt')
 
 
-def test_remove_unused_cache_outputs():
+def test_remove_unused_cache_outputs(cache_tmpfile):
     """
     Ensures that the remove_unused_cache_outputs() function is properly removing
     outputs that were not used during the model evaluations step of the
     compute_costs_and_variances() method.
     """
-    fname = 'cache_outputs.txt'
-    np.savetxt(fname, np.arange(30).reshape(3, -1))
+    np.savetxt(cache_tmpfile[0], np.arange(30).reshape(3, -1))
     indicies = [[0,1,2,3,4],[5,6,7,8,9],[0,2,4,6,8]]
 
-    MLMCSimulator._remove_unused_cached_outputs(fname, indicies)
+    MLMCSimulator._remove_unused_cached_outputs(cache_tmpfile[0], indicies)
 
-    outputs = np.genfromtxt(fname)
+    outputs = np.genfromtxt(cache_tmpfile[0])
     expected = np.array([[0,1,2,3,4], [15,16,17,18,19], [20,22,24,26,28]])
 
     assert np.array_equal(outputs[0], expected[0])
     assert np.array_equal(outputs[1], expected[1])
     assert np.array_equal(outputs[2], expected[2])
-
-    os.remove(fname)
-
-@pytest.fixture
-def cache_tmpfile(tmpdir):
-    p = tmpdir.mkdir('sub')
-    output_path = str(p.join('cache_outputs.txt'))
-    input_path = str(p.join('cache_inputs.txt'))
-    paths = [output_path, input_path]
-    return paths
 
 
 def test_setup_modular_cache(dummy_arange_simulator, cache_tmpfile):
