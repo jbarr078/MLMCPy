@@ -248,8 +248,8 @@ class MLMCSimulator(object):
         Sets up some operations for modular MLMC cache.
         """
         updated_inputs, cache_sample_sizes, indices_to_delete = \
-                self._compare_inputs_to_cache(sample_sizes,inputs,
-                                              cache_file_names[1])
+            self._compare_inputs_to_cache(sample_sizes,inputs,
+                                          cache_file_names[1])
 
         self._remove_unused_cached_outputs(cache_file_names[0],
                                            indices_to_delete)
@@ -266,26 +266,29 @@ class MLMCSimulator(object):
         """
         cache_inputs = np.genfromtxt(cache_input_file)
 
-        new_inputs = np.empty(0)
-        indicies = []
+        updated_inputs = np.empty(0)
         cache_sample_sizes = []
+        output_indicies = []
         sample_sum = 0
         
         for i, v in enumerate(sample_sizes):
             indices_to_delete = \
                 np.argwhere(inputs[sample_sum:] == cache_inputs[i])
 
-            indicies.append(indices_to_delete)
-
             cache_sample_sizes.append(len(indices_to_delete))
 
             if cache_sample_sizes[i] > 0:
                 removed_inputs = np.delete(inputs, indices_to_delete)
-                new_inputs = np.concatenate((new_inputs, removed_inputs))
+
+                updated_inputs = \
+                    np.concatenate((updated_inputs, removed_inputs))
 
             sample_sum += v
+            output_indicies.append(indices_to_delete)
 
-        return new_inputs.reshape(-1, 1), cache_sample_sizes, indicies
+        updated_inputs = updated_inputs.reshape(-1, 1)
+
+        return updated_inputs, cache_sample_sizes, output_indicies
 
     @staticmethod
     def _remove_unused_cached_outputs(cache_output_file, indices_to_save):
@@ -369,11 +372,9 @@ class MLMCSimulator(object):
                 try:
                     outputs = np.loadtxt('level%s_outputs.txt' % level)
                     if cache_file is not None:
-                        cache = np.loadtxt(cache_file[0])
-
                         outputs = \
                             MLMCSimulator._merge_cache_output(outputs,
-                                                              cache[level])
+                                                              cache_file[0])
 
                     outputs_dict.update({'level%s' % level: outputs})
                     level += 1
