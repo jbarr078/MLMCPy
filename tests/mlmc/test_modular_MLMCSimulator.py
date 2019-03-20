@@ -105,54 +105,53 @@ def test_write_cache_to_custom_file():
         os.remove(i)
 
 
-def test_compare_inputs_to_cache():
+def test_compare_inputs_to_cache(tmpdir):
     """
     Ensures the _compare_inputs_to_cache() method is properly finding similar
     values and removing them.
     """
-    fname = 'cache_inputs.txt'
-    np.savetxt(fname, np.arange(9).reshape(-1, 3))
-    inputs = np.arange(20).reshape(-1, 1)
+    p = tmpdir.mkdir('sub')
+    cache_path = str(p.join('cache_inputs.txt'))
+    np.savetxt(cache_path, np.arange(9).reshape(-1, 3))
+    inputs = np.arange(30).reshape(-1, 1)
 
-    new_inputs, cache_sample_sizes, _ = \
-        MLMCSimulator._compare_inputs_to_cache(inputs, fname)
+    new_inputs, cache_sizes, indicies_to_delete = \
+        MLMCSimulator._compare_inputs_to_cache(inputs, cache_path)
     
     assert np.array_equal(new_inputs, inputs[9:].ravel())
-    assert cache_sample_sizes == [3, 3, 3]
-
-    os.remove('cache_inputs.txt')
+    assert cache_sizes == [3, 3, 3]
 
 
-def test_remove_unused_cache_outputs(cache_tmpfile):
-    """
-    Ensures that the remove_unused_cache_outputs() function is properly removing
-    outputs that were not used during the model evaluations step of the
-    compute_costs_and_variances() method.
-    """
-    np.savetxt(cache_tmpfile[0], np.arange(30).reshape(3, -1))
-    indicies = [[0,1,2,3,4],[5,6,7,8,9],[0,2,4,6,8]]
+# def test_remove_unused_cache_outputs(cache_tmpfile):
+#     """
+#     Ensures that the remove_unused_cache_outputs() function is properly removing
+#     outputs that were not used during the model evaluations step of the
+#     compute_costs_and_variances() method.
+#     """
+#     np.savetxt(cache_tmpfile[0], np.arange(30).reshape(3, -1))
+#     indicies = [[0,1,2,3,4],[5,6,7,8,9],[0,2,4,6,8]]
 
-    MLMCSimulator._remove_unused_cached_outputs(cache_tmpfile[0], indicies)
+#     MLMCSimulator._remove_unused_cached_outputs(cache_tmpfile[0], indicies)
 
-    outputs = np.genfromtxt(cache_tmpfile[0])
-    expected = np.array([[0,1,2,3,4], [15,16,17,18,19], [20,22,24,26,28]])
+#     outputs = np.genfromtxt(cache_tmpfile[0])
+#     expected = np.array([[0,1,2,3,4], [15,16,17,18,19], [20,22,24,26,28]])
 
-    assert np.array_equal(outputs[0], expected[0])
-    assert np.array_equal(outputs[1], expected[1])
-    assert np.array_equal(outputs[2], expected[2])
+#     assert np.array_equal(outputs[0], expected[0])
+#     assert np.array_equal(outputs[1], expected[1])
+#     assert np.array_equal(outputs[2], expected[2])
 
 
-def test_setup_modular_cache(dummy_arange_simulator, cache_tmpfile):
-    sim = dummy_arange_simulator
+# def test_setup_modular_cache(dummy_arange_simulator, cache_tmpfile):
+#     sim = dummy_arange_simulator
 
-    np.savetxt(cache_tmpfile[0], np.arange(18).reshape(3, -1))
-    np.savetxt(cache_tmpfile[1], np.arange(10))
+#     np.savetxt(cache_tmpfile[0], np.arange(18).reshape(3, -1))
+#     np.savetxt(cache_tmpfile[1], np.arange(10))
 
-    inputs = np.arange(30)
-    updated_inputs, cache_sample_sizes = \
-        sim._setup_modular_cache(inputs, cache_tmpfile)
+#     inputs = np.arange(30)
+#     updated_inputs, cache_sample_sizes = \
+#         sim._setup_modular_cache(inputs, cache_tmpfile)
 
-    assert np.array_equal(updated_inputs, np.arange(10, 30))
+#     assert np.array_equal(updated_inputs, np.arange(10, 30))
 
 
 def test_modular_compute_costs_and_variances_cache_file(dummy_arange_simulator):
