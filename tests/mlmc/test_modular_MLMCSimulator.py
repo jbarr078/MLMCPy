@@ -105,21 +105,22 @@ def test_write_cache_to_custom_file():
         os.remove(i)
 
 
-def test_compare_inputs_to_cache(tmpdir):
-    """
-    Ensures the _compare_inputs_to_cache() method is properly finding similar
-    values and removing them.
-    """
-    p = tmpdir.mkdir('sub')
-    cache_path = str(p.join('cache_inputs.txt'))
-    np.savetxt(cache_path, np.arange(9).reshape(-1, 3))
-    inputs = np.arange(30).reshape(-1, 1)
+# def test_compare_inputs_to_cache(tmpdir):
+#     """
+#     Ensures the _compare_inputs_to_cache() method is properly finding similar
+#     values and removing them.
+#     """
+#     p = tmpdir.mkdir('sub')
+#     cache_path = str(p.join('cache_inputs.txt'))
+#     np.savetxt(cache_path, np.arange(9).reshape(-1, 3))
+#     inputs = np.arange(30).reshape(-1, 1)
+#     sample_sizes = [3, 3, 3]
 
-    new_inputs, cache_sizes, indicies_to_delete = \
-        MLMCSimulator._compare_inputs_to_cache(inputs, cache_path)
+#     new_inputs, cache_sizes, indicies_to_delete = \
+#         MLMCSimulator._compare_inputs_to_cache(sample_sizes, inputs, cache_path)
     
-    assert np.array_equal(new_inputs, inputs[9:].ravel())
-    assert cache_sizes == [3, 3, 3]
+#     assert cache_sizes == [3, 3, 3]    
+#     assert np.array_equal(new_inputs, inputs[9:].ravel())
 
 
 # def test_remove_unused_cache_outputs(cache_tmpfile):
@@ -1039,20 +1040,19 @@ def test_load_model_outputs_merge_cache():
     Ensures that load_model_outputs_for_each_level() is properly accessing the
     _merge_cache_output() method.
     """
-    fnames = ['level0_outputs.txt', 'level1_outputs.txt', 'level2_outputs.txt',
-              'cache_outputs.txt']
-
+    fnames = ['level0_outputs.txt', 'level1_outputs.txt', 'level2_outputs.txt']
+    cache_file = ['cache_outputs.txt']
     np.savetxt(fnames[0], np.arange(0, 5))
     np.savetxt(fnames[1], np.arange(5, 10))
     np.savetxt(fnames[2], np.arange(10, 15))
-    np.savetxt(fnames[3], np.arange(15, 30).reshape(3, 5))
+    np.savetxt(cache_file[0], np.arange(15, 20))
 
     expected_output0 = np.array([0,1,2,3,4,15,16,17,18,19])
-    expected_output1 = np.array([5,6,7,8,9,20,21,22,23,24])
-    expected_output2 = np.array([10,11,12,13,14,25,26,27,28,29])
+    expected_output1 = np.array([5,6,7,8,9,15,16,17,18,19])
+    expected_output2 = np.array([10,11,12,13,14,15,16,17,18,19])
 
     merged_output = \
-        MLMCSimulator.load_model_outputs_for_each_level(cache_file=fnames[3])
+        MLMCSimulator.load_model_outputs_for_each_level(cache_file=cache_file)
 
     assert np.array_equal(merged_output['level0'], expected_output0)
     assert np.array_equal(merged_output['level1'], expected_output1)
