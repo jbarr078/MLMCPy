@@ -247,16 +247,17 @@ class MLMCSimulator(object):
 
         return inputs_dict
 
-    def _setup_modular_cache(self, sample_sizes, inputs, cache_file_names):
+    @staticmethod
+    def _setup_modular_cache(sample_sizes, inputs, cache_file_names):
         """
         Sets up some operations for modular MLMC cache.
         """
         updated_inputs, cache_sample_sizes, indices_to_save = \
-            self._compare_inputs_to_cache(sample_sizes,inputs,
-                                          cache_file_names[1])
+            MLMCSimulator._compare_inputs_to_cache(sample_sizes, inputs,
+                                                   cache_file_names[1])
 
-        self._remove_unused_cached_outputs(cache_file_names[0],
-                                           indices_to_save)
+        MLMCSimulator._remove_unused_cached_outputs(cache_file_names[0],
+                                                    indices_to_save)
 
         return updated_inputs, cache_sample_sizes
 
@@ -300,7 +301,9 @@ class MLMCSimulator(object):
             updated_outputs.append(np.take(cache_outputs[i],
                                            indices_to_save[i]))
 
-        np.savetxt(cache_output_file, np.asarray(updated_outputs))
+        # Need a better solution to 3D NP array to txt file (TODO)
+        for i in range(len(updated_outputs)):
+            np.savetxt('level%s_cache.txt' % i, updated_outputs[i])
 
     def store_model_inputs_to_run_for_each_level(self, sample_sizes,
                                                  filenames=None,

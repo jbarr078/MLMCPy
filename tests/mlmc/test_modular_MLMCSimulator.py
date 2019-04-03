@@ -129,22 +129,54 @@ def test_remove_unused_cached_outputs(cache_tmpfile):
     cache = np.array([cache1, cache1, cache1]).reshape(3, -1)
     np.savetxt(cache_tmpfile[0], cache)
     indicies = [np.arange(100), np.arange(50), np.arange(25)]
+    MLMCSimulator._remove_unused_cached_outputs(cache_tmpfile[0], indicies)
+    
+    test_outputs1 = np.genfromtxt('level0_cache.txt')
+    test_outputs1 = np.sort(test_outputs1)
 
-    test_outputs = np.genfromtxt(cache_tmpfile[0])
+    test_outputs2 = np.genfromtxt('level1_cache.txt')
+    test_outputs2 = np.sort(test_outputs2)
 
-    assert np.array_equal(test_outputs[0], np.arange(100))
+    test_outputs3 = np.genfromtxt('level2_cache.txt')
+    test_outputs3 = np.sort(test_outputs3)
 
-# def test_setup_modular_cache(dummy_arange_simulator, cache_tmpfile):
-#     sim = dummy_arange_simulator
+    assert np.array_equal(test_outputs1, np.arange(100))
+    assert np.array_equal(test_outputs2, np.arange(50))
+    assert np.array_equal(test_outputs3, np.arange(25))
 
-#     np.savetxt(cache_tmpfile[0], np.arange(18).reshape(3, -1))
-#     np.savetxt(cache_tmpfile[1], np.arange(10))
+    for i in range(3):
+        os.remove('level%s_cache.txt' % i)
 
-#     inputs = np.arange(30)
-#     updated_inputs, cache_sample_sizes = \
-#         sim._setup_modular_cache(inputs, cache_tmpfile)
 
-#     assert np.array_equal(updated_inputs, np.arange(10, 30))
+def test_setup_modular_cache(cache_tmpfile):
+    cache1 = np.arange(100).reshape(-1, 1)
+    cache2 = np.arange(100, 200).reshape(-1, 1)
+    cache3 = np.arange(150, 250).reshape(-1, 1)
+    cache = np.array([cache1, cache2, cache3]).reshape(3, -1)
+    np.savetxt(cache_tmpfile[1], cache)
+    output_cache1 = np.arange(200)
+    output_caches = \
+        np.array([output_cache1, output_cache1, output_cache1]).reshape(3, -1)
+    np.savetxt(cache_tmpfile[0], output_caches)
+    sample_sizes = [500, 50, 10]
+    inputs = np.arange(300)
+
+    test_inputs, cache_sample_sizes = \
+        MLMCSimulator._setup_modular_cache(sample_sizes, inputs,
+                                           cache_tmpfile)
+    test_outputs1 = np.genfromtxt('level0_cache.txt')
+    test_outputs2 = np.genfromtxt('level1_cache.txt')
+    test_outputs3 = np.genfromtxt('level2_cache.txt')
+
+    assert np.array_equal(test_inputs.ravel(), np.arange(160, 300))
+    assert cache_sample_sizes == [100, 50, 10]
+    assert np.array_equal(test_outputs1, np.arange(100))
+    assert np.array_equal(test_outputs2, np.arange(100, 150))
+    assert np.array_equal(test_outputs3, np.arange(150, 160))
+
+    for i in range(3):
+        os.remove('level%s_cache.txt' % i)
+
 
 
 def test_modular_compute_costs_and_variances_cache_file(dummy_arange_simulator):
