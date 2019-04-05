@@ -227,23 +227,21 @@ class MLMCSimulator(object):
             inputs, cache_sample_sizes = \
                 self._setup_modular_cache(sample_sizes, inputs, cache_file_names)  
 
-            new_sample_sizes = sample_sizes - cache_sample_sizes
-        else:
-            new_sample_sizes = sample_sizes
+            sample_sizes -= cache_sample_sizes
 
         inputs_dict = {}
         index_sum = 0
 
-        for level in range(len(new_sample_sizes)):
-            final_index = index_sum + new_sample_sizes[level]
+        for level in range(len(sample_sizes)):
+            final_index = index_sum + sample_sizes[level]
 
-            if level != len(new_sample_sizes) - 1:
-                final_index += new_sample_sizes[level+1]
+            if level != len(sample_sizes) - 1:
+                final_index += sample_sizes[level+1]
 
             inputs_dict.update({'level'+str(level): \
                                 inputs[index_sum: final_index]})
 
-            index_sum += new_sample_sizes[level]
+            index_sum += sample_sizes[level]
 
         return inputs_dict
 
@@ -340,8 +338,8 @@ class MLMCSimulator(object):
         :type num_models: int
         :param filenames: Custom file names that will be loaded into the output
             dictionary.
-        :param cache_file: The file name of the output cache.
-        :type cache_file: str
+        :param cache_file: The file names for each cache output level.
+        :type cache_file: list
         :return: Returns a dictionary of outputs.
         :rtype: dict
         """
@@ -351,12 +349,10 @@ class MLMCSimulator(object):
             if isinstance(filenames, list):
                 for level, filename in enumerate(filenames):
                     outputs = np.loadtxt('%s' % filename)
-                    if cache_file:
-                        cache = np.loadtxt(cache_file)
-
+                    if cache_file is not None:
                         outputs = \
                             MLMCSimulator._merge_cache_output(outputs,
-                                                              cache[level])
+                                                              cache_file[level])
 
                     outputs_dict.update({'level%s' % level: outputs})
             else:
@@ -370,7 +366,7 @@ class MLMCSimulator(object):
                     if cache_file is not None:
                         outputs = \
                             MLMCSimulator._merge_cache_output(outputs,
-                                                              cache_file[0])
+                                                              cache_file[level])
 
                     outputs_dict.update({'level%s' % level: outputs})
                     level += 1
