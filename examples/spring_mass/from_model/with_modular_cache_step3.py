@@ -16,8 +16,10 @@ using previously calculated model outputs by loading them from file
 '''
 
 # Optional - Create a list of cache file names and pass to the method
-# load_outputs_for_each_level():
+# load_outputs_for_each_level(), this will merge the saved cache output values
+# with the outputs generated in Step 2:
 cache_files = ['level0_cache.txt', 'level1_cache.txt', 'level2_cache.txt']
+
 model_outputs_per_level = \
     MLMCSimulator.load_model_outputs_for_each_level(cache_file=cache_files)
 
