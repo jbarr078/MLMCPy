@@ -453,10 +453,7 @@ class MLMCSimulator(object):
         output_list = list(value for value in model_outputs.values())
 
         for i in reversed(range(len(output_list))):
-            if i == len(output_list) - 1:
-                temp_size = len(output_list[i])
-            else:
-                temp_size = len(output_list[i]) - temp_size
+            temp_size = len(output_list[i]) - temp_size
 
             sizes.append(temp_size)
 
