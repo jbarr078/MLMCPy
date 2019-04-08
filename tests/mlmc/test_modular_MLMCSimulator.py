@@ -1095,35 +1095,38 @@ def test_load_model_outputs_merge_cache(tmpdir):
         os.remove('level%s_outputs.txt' % i)
 
 
-# def test_load_model_outputs_merge_cache_custom_files():
-#     """
-#     Ensures that load_model_outputs_for_each_level() is properly accessing the
-#     _merge_cache_output() method.
-#     """
-#     fnames = ['level0_output.txt', 'level1_output.txt', 'level2_output.txt']
-#     cache_file = 'cache_outputs.txt'
+def test_load_model_outputs_merge_cache_custom_files(tmpdir):
+    """
+    Ensures that load_model_outputs_for_each_level() is properly accessing the
+    _merge_cache_output() method.
+    """
+    p = tmpdir.mkdir('sub')
+    fnames = [str(p.join('level0_output.txt')),
+              str(p.join('level1_output.txt')),
+              str(p.join('level2_output.txt')),
+              str(p.join('cache1_outputs.txt')),
+              str(p.join('cache2_outputs.txt')),
+              str(p.join('cache3_outputs.txt'))]
 
-#     np.savetxt(fnames[0], np.arange(0, 5))
-#     np.savetxt(fnames[1], np.arange(5, 10))
-#     np.savetxt(fnames[2], np.arange(10, 15))
-#     np.savetxt(cache_file, np.arange(15, 30).reshape(3, 5))
+    np.savetxt(fnames[0], np.arange(0, 5))
+    np.savetxt(fnames[1], np.arange(5, 10))
+    np.savetxt(fnames[2], np.arange(10, 15))
+    np.savetxt(fnames[3], np.arange(15, 20))
+    np.savetxt(fnames[4], np.arange(20, 25))
+    np.savetxt(fnames[5], np.arange(25, 30))
 
-#     expected_output0 = np.array([0,1,2,3,4,15,16,17,18,19])
-#     expected_output1 = np.array([5,6,7,8,9,20,21,22,23,24])
-#     expected_output2 = np.array([10,11,12,13,14,25,26,27,28,29])
 
-#     merged_output = \
-#         MLMCSimulator.load_model_outputs_for_each_level(filenames=fnames,
-#                                                         cache_file=cache_file)
+    expected_output0 = np.array([0,1,2,3,4,15,16,17,18,19])
+    expected_output1 = np.array([5,6,7,8,9,20,21,22,23,24])
+    expected_output2 = np.array([10,11,12,13,14,25,26,27,28,29])
 
-#     assert np.array_equal(merged_output['level0'], expected_output0)
-#     assert np.array_equal(merged_output['level1'], expected_output1)
-#     assert np.array_equal(merged_output['level2'], expected_output2)
+    merged_output = \
+        MLMCSimulator.load_model_outputs_for_each_level(filenames=fnames[:3],
+                                                        cache_file=fnames[3:])
 
-#     for files in fnames:
-#         os.remove(files)
-
-#     os.remove(cache_file)
+    assert np.array_equal(merged_output['level0'], expected_output0)
+    assert np.array_equal(merged_output['level1'], expected_output1)
+    assert np.array_equal(merged_output['level2'], expected_output2)
 
 
 def test_load_model_outputs_for_each_level_exception():
