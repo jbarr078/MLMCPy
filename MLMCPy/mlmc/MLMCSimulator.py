@@ -275,7 +275,8 @@ class MLMCSimulator(object):
         sample_index = 0
 
         for i, v in enumerate(sample_sizes):
-            to_delete = np.argwhere(inputs == cache_inputs[i][:v])
+            to_delete = \
+                np.argwhere(inputs[sample_index:] == cache_inputs[i].flatten())
             cache_sample_sizes.append(len(to_delete))
 
             indicies.append(to_delete[:, 1])
