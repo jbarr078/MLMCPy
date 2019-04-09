@@ -407,15 +407,14 @@ class MLMCSimulator(object):
 
         estimates = 0
         variances = 0
-        num_samples = 0
 
-        for level in range(len(differences_per_level)):
-            num_samples = float(len(differences_per_level[level]))
+        for _, differences in enumerate(differences_per_level):
+            num_samples = float(len(differences))
 
             estimates += \
-                np.sum(differences_per_level[level], axis=0) / num_samples
+                np.sum(differences, axis=0) / num_samples
             variances += \
-                np.var(differences_per_level[level], axis=0) / num_samples
+                np.var(differences, axis=0) / num_samples
 
         return estimates, variances
 
