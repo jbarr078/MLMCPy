@@ -387,7 +387,7 @@ class MLMCSimulator(object):
         """
         cache_outputs = np.loadtxt(cache_outputs_file)
 
-        merged_outputs = np.concatenate((outputs, cache_outputs))
+        merged_outputs = np.concatenate((cache_outputs, outputs))
 
         return merged_outputs
 
