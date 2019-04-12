@@ -11,9 +11,13 @@ objects with functional forms as inputs to MLMCPy. See the
 in files as inputs.
 
 Demonstrates the modular ("advanced") usage of MLMCPy where a user splits the
-analysis into 3 steps/scripts. This is script #3 for computing MLMC estimators
-using previously calculated model outputs by loading them from file
+analysis into 3 steps/scripts. It also demonstrates the optional modular cache
+functionality. This is script #3 for computing MLMC estimators using previously
+calculated model outputs by loading them from file.
 '''
+
+# Step 3 - Load and merge model outputs with cached outputs and aggregate model
+# outputs to compute estimators:
 
 # Optional - Enable the cache data by changing cache_enabled to true. It will
 # now merge the cached outputs with the outputs generated in Step 2:
@@ -22,7 +26,7 @@ cache = True
 model_outputs_per_level = \
     MLMCSimulator.load_model_outputs_for_each_level(cache_enabled=cache)
 
-# Step 6 - Aggregate model outputs to compute estimators:
+# Aggregate model outputs to compute estimators:
 mlmc_start = timeit.default_timer()
 
 estimates, variances = \
@@ -30,7 +34,7 @@ estimates, variances = \
 
 mlmc_total_cost = timeit.default_timer() - mlmc_start
 
-# Step 7 - Summarize results:
+# Summarize results:
 
 print
 print 'MLMC estimate: %s' % estimates
