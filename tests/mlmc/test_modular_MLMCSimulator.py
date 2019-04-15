@@ -106,22 +106,23 @@ def test_write_cache_to_custom_file():
 
 
 def test_compare_inputs_to_cache(cache_tmpfile):
-    cache1 = np.arange(100).reshape(-1, 1)
-    cache2 = np.arange(100, 200).reshape(-1, 1)
-    cache3 = np.arange(150, 250).reshape(-1, 1)
-    cache = np.array([cache1, cache2, cache3]).reshape(3, -1)
+    cache1 = np.arange(100)
+    cache2 = np.arange(380, 480)
+    cache3 = np.arange(495, 595)
+    cache = np.array([cache1, cache2, cache3])
     np.savetxt(cache_tmpfile[0], cache)
 
-    sample_sizes = [500, 50, 10]
-    inputs = np.arange(300)
+    sample_sizes = [400, 90, 10]
+    inputs = np.arange(500).reshape(-1, 1)
 
     test_inputs, cache_sample_sizes, indicies = \
         MLMCSimulator._compare_inputs_to_cache(sample_sizes, inputs,
                                                cache_tmpfile[0])
+    
+    assert np.array_equal(test_inputs[:300].flatten(), np.arange(100, 400))
+    assert np.array_equal(test_inputs[300:310].flatten(), np.arange(480, 490))
+    assert cache_sample_sizes == [100, 80, 5]
 
-    assert cache_sample_sizes == [100, 50, 10]
-    assert np.array_equal(test_inputs.ravel(), inputs[160:])
-    assert np.array_equal(np.hstack(indicies), np.arange(160)) 
 
 
 def test_remove_unused_cached_outputs(cache_tmpfile):
@@ -148,34 +149,34 @@ def test_remove_unused_cached_outputs(cache_tmpfile):
         os.remove('level%s_cache.txt' % i)
 
 
-def test_setup_modular_cache(cache_tmpfile):
-    cache1 = np.arange(100).reshape(-1, 1)
-    cache2 = np.arange(100, 200).reshape(-1, 1)
-    cache3 = np.arange(150, 250).reshape(-1, 1)
-    cache = np.array([cache1, cache2, cache3]).reshape(3, -1)
-    np.savetxt(cache_tmpfile[1], cache)
-    output_cache1 = np.arange(200)
-    output_caches = \
-        np.array([output_cache1, output_cache1, output_cache1]).reshape(3, -1)
-    np.savetxt(cache_tmpfile[0], output_caches)
-    sample_sizes = [500, 50, 10]
-    inputs = np.arange(300)
+# def test_setup_modular_cache(cache_tmpfile):
+#     cache1 = np.arange(100).reshape(-1, 1)
+#     cache2 = np.arange(100, 200).reshape(-1, 1)
+#     cache3 = np.arange(150, 250).reshape(-1, 1)
+#     cache = np.array([cache1, cache2, cache3]).reshape(3, -1)
+#     np.savetxt(cache_tmpfile[1], cache)
+#     output_cache1 = np.arange(200)
+#     output_caches = \
+#         np.array([output_cache1, output_cache1, output_cache1]).reshape(3, -1)
+#     np.savetxt(cache_tmpfile[0], output_caches)
+#     sample_sizes = [500, 50, 10]
+#     inputs = np.arange(300)
 
-    test_inputs, cache_sample_sizes = \
-        MLMCSimulator._setup_modular_cache(sample_sizes, inputs,
-                                           cache_tmpfile)
-    test_outputs1 = np.genfromtxt('level0_cache.txt')
-    test_outputs2 = np.genfromtxt('level1_cache.txt')
-    test_outputs3 = np.genfromtxt('level2_cache.txt')
+#     test_inputs, cache_sample_sizes = \
+#         MLMCSimulator._setup_modular_cache(sample_sizes, inputs,
+#                                            cache_tmpfile)
+#     test_outputs1 = np.genfromtxt('level0_cache.txt')
+#     test_outputs2 = np.genfromtxt('level1_cache.txt')
+#     test_outputs3 = np.genfromtxt('level2_cache.txt')
 
-    assert np.array_equal(test_inputs.ravel(), np.arange(160, 300))
-    assert cache_sample_sizes == [100, 50, 10]
-    assert np.array_equal(test_outputs1, np.arange(100))
-    assert np.array_equal(test_outputs2, np.arange(100, 150))
-    assert np.array_equal(test_outputs3, np.arange(150, 160))
+#     assert np.array_equal(test_inputs.ravel(), np.arange(160, 300))
+#     assert cache_sample_sizes == [100, 50, 10]
+#     assert np.array_equal(test_outputs1, np.arange(100))
+#     assert np.array_equal(test_outputs2, np.arange(100, 150))
+#     assert np.array_equal(test_outputs3, np.arange(150, 160))
 
-    for i in range(3):
-        os.remove('level%s_cache.txt' % i)
+#     for i in range(3):
+#         os.remove('level%s_cache.txt' % i)
 
 
 
@@ -1059,7 +1060,42 @@ def test_load_model_outputs_for_each_level_custom_fname(spring_mlmc_simulator):
         os.remove('level%s.txt' % i)
 
 
-def test_load_model_outputs_merge_cache(tmpdir):
+def test_load_model_outputs_merge_cache():
+    """
+    Ensures that load_model_outputs_for_each_level() is properly accessing the
+    _merge_cache_output() method.
+    """
+    file_paths = ['level0_outputs.txt',
+                  'level1_outputs.txt',
+                  'level2_outputs.txt',
+                  'level0_cache.txt',
+                  'level1_cache.txt',
+                  'level2_cache.txt']
+
+    np.savetxt(file_paths[0], np.arange(0, 5))
+    np.savetxt(file_paths[1], np.arange(5, 10))
+    np.savetxt(file_paths[2], np.arange(10, 15))
+    np.savetxt(file_paths[3], np.arange(15, 20))
+    np.savetxt(file_paths[4], np.arange(20, 25))
+    np.savetxt(file_paths[5], np.arange(25, 30))
+
+    expected_output0 = np.array([15,16,17,18,19, 0,1,2,3,4])
+    expected_output1 = np.array([20,21,22,23,24,5,6,7,8,9])
+    expected_output2 = np.array([25,26,27,28,29,10,11,12,13,14])
+
+    merged_output = \
+        MLMCSimulator.load_model_outputs_for_each_level(cache_enabled=True)
+
+    assert np.array_equal(merged_output['level0'], expected_output0)
+    assert np.array_equal(merged_output['level1'], expected_output1)
+    assert np.array_equal(merged_output['level2'], expected_output2)
+
+    for i in range(3):
+        os.remove('level%s_outputs.txt' % i)
+        os.remove('level%s_cache.txt' % i)
+
+
+def test_load_model_outputs_merge_cache_custom_files(tmpdir):
     """
     Ensures that load_model_outputs_for_each_level() is properly accessing the
     _merge_cache_output() method.
@@ -1069,23 +1105,24 @@ def test_load_model_outputs_merge_cache(tmpdir):
                   'level1_outputs.txt',
                   'level2_outputs.txt']
 
-    cache_paths = [str(p.join('cache01_outputs.txt')),
-                   str(p.join('cache03_outputs.txt')),
-                   str(p.join('cache02_outputs.txt'))]
+    files = [str(p.join('cache01_outputs.txt')),
+             str(p.join('cache03_outputs.txt')),
+             str(p.join('cache02_outputs.txt'))]
 
     np.savetxt(file_paths[0], np.arange(0, 5))
     np.savetxt(file_paths[1], np.arange(5, 10))
     np.savetxt(file_paths[2], np.arange(10, 15))
-    np.savetxt(cache_paths[0], np.arange(15, 20))
-    np.savetxt(cache_paths[1], np.arange(20, 25))
-    np.savetxt(cache_paths[2], np.arange(25, 30))
+    np.savetxt(files[0], np.arange(15, 20))
+    np.savetxt(files[1], np.arange(20, 25))
+    np.savetxt(files[2], np.arange(25, 30))
 
-    expected_output0 = np.array([0,1,2,3,4,15,16,17,18,19])
-    expected_output1 = np.array([5,6,7,8,9,20,21,22,23,24])
-    expected_output2 = np.array([10,11,12,13,14,25,26,27,28,29])
+    expected_output0 = np.array([15,16,17,18,19, 0,1,2,3,4])
+    expected_output1 = np.array([20,21,22,23,24,5,6,7,8,9])
+    expected_output2 = np.array([25,26,27,28,29,10,11,12,13,14])
 
     merged_output = \
-        MLMCSimulator.load_model_outputs_for_each_level(cache_file=cache_paths)
+        MLMCSimulator.load_model_outputs_for_each_level(cache_enabled=True,
+                                                        merged_cache=files)
 
     assert np.array_equal(merged_output['level0'], expected_output0)
     assert np.array_equal(merged_output['level1'], expected_output1)
@@ -1093,40 +1130,6 @@ def test_load_model_outputs_merge_cache(tmpdir):
 
     for i in range(3):
         os.remove('level%s_outputs.txt' % i)
-
-
-def test_load_model_outputs_merge_cache_custom_files(tmpdir):
-    """
-    Ensures that load_model_outputs_for_each_level() is properly accessing the
-    _merge_cache_output() method.
-    """
-    p = tmpdir.mkdir('sub')
-    fnames = [str(p.join('level0_output.txt')),
-              str(p.join('level1_output.txt')),
-              str(p.join('level2_output.txt')),
-              str(p.join('cache1_outputs.txt')),
-              str(p.join('cache2_outputs.txt')),
-              str(p.join('cache3_outputs.txt'))]
-
-    np.savetxt(fnames[0], np.arange(0, 5))
-    np.savetxt(fnames[1], np.arange(5, 10))
-    np.savetxt(fnames[2], np.arange(10, 15))
-    np.savetxt(fnames[3], np.arange(15, 20))
-    np.savetxt(fnames[4], np.arange(20, 25))
-    np.savetxt(fnames[5], np.arange(25, 30))
-
-
-    expected_output0 = np.array([0,1,2,3,4,15,16,17,18,19])
-    expected_output1 = np.array([5,6,7,8,9,20,21,22,23,24])
-    expected_output2 = np.array([10,11,12,13,14,25,26,27,28,29])
-
-    merged_output = \
-        MLMCSimulator.load_model_outputs_for_each_level(filenames=fnames[:3],
-                                                        cache_file=fnames[3:])
-
-    assert np.array_equal(merged_output['level0'], expected_output0)
-    assert np.array_equal(merged_output['level1'], expected_output1)
-    assert np.array_equal(merged_output['level2'], expected_output2)
 
 
 def test_load_model_outputs_for_each_level_exception():
@@ -1142,15 +1145,32 @@ def test_merge_model_output_with_cache():
     Ensures that merge_model_output_with_cache() is properly merging the user
     evaluated outputs with the cache created by compute_costs_and_variances().
     """
-    fname = 'cache_outputs.txt'
+    fname = 'level0_cache.txt'
     np.savetxt(fname, np.arange(11))
     outputs = np.arange(11, 21)
 
-    merged_outputs = MLMCSimulator._merge_cache_output(outputs, fname)
+    merged_outputs = MLMCSimulator._merge_cache_output(outputs, 0)
     merged_outputs = np.sort(merged_outputs)
 
     assert np.array_equal(merged_outputs, np.arange(21))
     assert np.mean(merged_outputs) == 10
 
     os.remove(fname)
+
+
+def test_merge_model_output_with_cache_custom_files(tmpdir):
+    """
+    Ensures that merge_model_output_with_cache() is properly merging the user
+    evaluated outputs with the cache created by compute_costs_and_variances().
+    """
+    p = tmpdir.mkdir('sub')
+    fname = [str(p.join('level0_cache.txt'))]
+    np.savetxt(fname[0], np.arange(11))
+    outputs = np.arange(11, 21)
+
+    merged_outputs = MLMCSimulator._merge_cache_output(outputs, 0, fname)
+    merged_outputs = np.sort(merged_outputs)
+
+    assert np.array_equal(merged_outputs, np.arange(21))
+    assert np.mean(merged_outputs) == 10
 

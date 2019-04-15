@@ -63,5 +63,11 @@ sample_sizes = mlmc_simulator.compute_optimal_sample_sizes(costs, variances,
 # Optional - Pass the cace_files variable to the method
 # store_model_inputs_to_run_for_each_level(), this will generate the cache files
 # used in Step 3:
+
+# Optional - Provide file names for the merged cache generated in the method
+# _remove_unused_cached_outputs().
+merged_cache = ['cache_level0.txt', 'cache_level1.txt', 'cache_level2.txt']
+
 mlmc_simulator.store_model_inputs_to_run_for_each_level(sample_sizes,
-                                                        cache_files=cache_files)
+                                                        cache_files=cache_files,
+                                                merged_cache_files=merged_cache)

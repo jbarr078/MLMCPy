@@ -208,7 +208,8 @@ class MLMCSimulator(object):
         return None
 
     def get_model_inputs_to_run_for_each_level(self, sample_sizes,
-                                               cache_files=None):
+                                               cache_files=None,
+                                               merged_cache_files=None):
         """
         Takes a list of sample sizes sizes and returns a dictionary 2D
         np.ndarray with random inputs.
@@ -225,7 +226,8 @@ class MLMCSimulator(object):
 
         if cache_files is not None:
             inputs, cache_sample_sizes = \
-                self._setup_modular_cache(sample_sizes, inputs, cache_files)
+                self._setup_modular_cache(sample_sizes, inputs, cache_files,
+                                          merged_cache_files)
 
             sample_sizes -= cache_sample_sizes
 
@@ -246,7 +248,8 @@ class MLMCSimulator(object):
         return inputs_dict
 
     @staticmethod
-    def _setup_modular_cache(sample_sizes, inputs, cache_files):
+    def _setup_modular_cache(sample_sizes, inputs, cache_files,
+                             merged_cache_files=None):
         """
         Sets up some operations for modular MLMC cache.
         """
@@ -255,7 +258,8 @@ class MLMCSimulator(object):
                                                    cache_files[1])
 
         MLMCSimulator._remove_unused_cached_outputs(cache_files[0],
-                                                    indices_to_save)
+                                                    indices_to_save,
+                                                    merged_cache_files)
 
         return updated_inputs, cache_sample_sizes
 
@@ -287,7 +291,8 @@ class MLMCSimulator(object):
         return new_inputs, cache_sample_sizes, indicies
 
     @staticmethod
-    def _remove_unused_cached_outputs(cache_output_file, indices_to_save):
+    def _remove_unused_cached_outputs(cache_output_file, indices_to_save,
+                                      merged_cache_files=None):
         """
         Reads in the cache_output_file and uses the indices determined by the
         _compare_inputs_to_cache() method to save the corresponding values. Then
@@ -301,12 +306,17 @@ class MLMCSimulator(object):
                                            indices_to_save[i]))
 
         # Need a better solution to 3D NP array to txt file (TODO)
-        for i in range(len(updated_outputs)):
-            np.savetxt('level%s_cache.txt' % i, updated_outputs[i])
+        if merged_cache_files is not None:
+            for i in range(len(updated_outputs)):
+                np.savetxt(merged_cache_files[i], updated_outputs[i])
+        else:
+            for i in range(len(updated_outputs)):
+                np.savetxt('level%s_cache.txt' % i, updated_outputs[i])
 
     def store_model_inputs_to_run_for_each_level(self, sample_sizes,
                                                  filenames=None,
-                                                 cache_files=None):
+                                                 cache_files=None,
+                                                 merged_cache_files=None):
         """
         Takes a list of sample sizes sizes and passes them to
         get_model_inputs_to_run_for_each_level(). Then saves inputs to a text
@@ -320,7 +330,8 @@ class MLMCSimulator(object):
         self._check_store_model_params(sample_sizes, filenames)
 
         inputs = self.get_model_inputs_to_run_for_each_level(sample_sizes,
-                                                             cache_files)
+                                                             cache_files,
+                                                             merged_cache_files)
 
         if filenames is not None:
             for i, key in enumerate(inputs):
@@ -330,8 +341,8 @@ class MLMCSimulator(object):
                 np.savetxt('%s_inputs.txt' % key, inputs[key])
 
     @staticmethod
-    def load_model_outputs_for_each_level(filenames=None,
-                                          cache_enabled=False):
+    def load_model_outputs_for_each_level(filenames=None, cache_enabled=False,
+                                          merged_cache=None):
         """
         Loads model outputs from text files.
 
@@ -352,7 +363,8 @@ class MLMCSimulator(object):
                     outputs = np.loadtxt('%s' % filename)
                     if cache_enabled:
                         outputs = \
-                            MLMCSimulator._merge_cache_output(outputs, level)
+                            MLMCSimulator._merge_cache_output(outputs, level,
+                                                              merged_cache)
 
                     outputs_dict.update({'level%s' % level: outputs})
             else:
@@ -365,7 +377,8 @@ class MLMCSimulator(object):
                     outputs = np.loadtxt('level%s_outputs.txt' % level)
                     if cache_enabled:
                         outputs = \
-                            MLMCSimulator._merge_cache_output(outputs, level)
+                            MLMCSimulator._merge_cache_output(outputs, level,
+                                                              merged_cache)
 
                     outputs_dict.update({'level%s' % level: outputs})
                     level += 1
@@ -375,12 +388,15 @@ class MLMCSimulator(object):
         return outputs_dict
 
     @staticmethod
-    def _merge_cache_output(outputs, level):
+    def _merge_cache_output(outputs, level, merged_cache=None):
         """
         Takes in outputs and merges them with the cached outputs generated by
         compute_costs_and_variances().
         """
-        cache_outputs_file = 'level%s_cache.txt' % level
+        if merged_cache is not None:
+            cache_outputs_file = merged_cache[level]
+        else:
+            cache_outputs_file = 'level%s_cache.txt' % level
 
         with np.warnings.catch_warnings():
             np.warnings.simplefilter('ignore')
