@@ -23,11 +23,9 @@ calculated model outputs by loading them from file.
 # a list with the file names from merged cache in Step 1. It will now merge the
 # cached outputs with the outputs generated in Step 2:
 cache = True
-merged_cache = ['cache_level0.txt', 'cache_level1.txt', 'cache_level2.txt']
 
 model_outputs_per_level = \
-    MLMCSimulator.load_model_outputs_for_each_level(cache_enabled=cache,
-                                                    merged_cache=merged_cache)
+    MLMCSimulator.load_model_outputs_for_each_level(cache=cache)
 
 # Aggregate model outputs to compute estimators:
 mlmc_start = timeit.default_timer()

@@ -48,26 +48,21 @@ mlmc_simulator = MLMCSimulator(stiffness_distribution, models)
 initial_sample_size = 100
 epsilon = np.sqrt(0.00170890122096)
 
-# Optional - Create a list of cache file names and pass to the method
-# compute_costs_and_variances():
-cache_files = ['cache_outputs.txt', 'cache_inputs.txt']
+# Optional - Set the optional parameter cache to true to activate the modular
+# cache functionality. Additionally, a specific file name can be passed as a
+# string, must be an hdf5 file e.g. 'custom_mlmc_cache.hdf5'.
+cache = True
 
 costs, variances = \
     mlmc_simulator.compute_costs_and_variances(initial_sample_size,
-                                               cache_file_names=cache_files)
+                                               cache=cache)
 
 # Calculate optimal sample size for each level from cost/variance/error:
 sample_sizes = mlmc_simulator.compute_optimal_sample_sizes(costs, variances,
                                                            epsilon)
 
 # Optional - Pass the cace_files variable to the method
-# store_model_inputs_to_run_for_each_level(), this will generate the cache files
+# store_model_inputs_to_run_for_each_level(), this will modify the cache file
 # used in Step 3:
-
-# Optional - Provide file names for the merged cache generated in the method
-# _remove_unused_cached_outputs().
-merged_cache = ['cache_level0.txt', 'cache_level1.txt', 'cache_level2.txt']
-
 mlmc_simulator.store_model_inputs_to_run_for_each_level(sample_sizes,
-                                                        cache_files=cache_files,
-                                                merged_cache_files=merged_cache)
+                                                        cache=cache)

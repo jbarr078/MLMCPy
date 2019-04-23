@@ -1,6 +1,8 @@
 import os
 import pytest
 import sys
+import h5py
+
 import numpy as np
 
 # Needed when running mpiexec. Be sure to run from tests directory.
@@ -13,6 +15,7 @@ if 'PYTHONPATH' not in os.environ:
 from MLMCPy.mlmc import MLMCSimulator
 from MLMCPy.input import RandomInput, InputFromData
 from MLMCPy.model import ModelFromData
+from MLMCPy.hdf5 import HDF5Storage
 from tests.testing_scripts import SpringMassModel
 
 # Create list of paths for each data file.
@@ -67,135 +70,20 @@ def test_modular_costs_and_initial_variances_from_data(data_input,
     assert np.all(np.isclose(true_variances, variances, rtol=.1))
 
 
-def test_write_cache_to_file():
-    """
-    Ensures the _write_cache_to_file() method is correctly writing the array to
-    text.    
-    """
-    inputs = np.arange(0, 5)
-    outputs = np.arange(5, 10)
-
-    MLMCSimulator._write_cache_to_file(True, outputs, inputs)
-    cached_inputs = np.genfromtxt('cache_inputs.txt')
-    cached_outputs = np.genfromtxt('cache_outputs.txt')
-
-    assert np.array_equal(cached_inputs, inputs)
-    assert np.array_equal(cached_outputs, outputs)
-
-    os.remove('cache_outputs.txt')
-    os.remove('cache_inputs.txt')
-
-
-def test_write_cache_to_custom_file():
-    """
-    Ensures the _write_cache_to_file() method is correctly writing to custom
-    file names.   
-    """
-    inputs = np.arange(0, 5)
-    outputs = np.arange(5, 10)
-    cache = ['custom_outputs.txt', 'custom_inputs.txt']
-    MLMCSimulator._write_cache_to_file(cache, outputs, inputs)
-    cached_outputs = np.genfromtxt(cache[0])
-    cached_inputs = np.genfromtxt(cache[1])
-
-    assert np.array_equal(cached_inputs, inputs)
-    assert np.array_equal(cached_outputs, outputs)
-
-    for i in cache:
-        os.remove(i)
-
-
-def test_compare_inputs_to_cache(cache_tmpfile):
-    cache1 = np.arange(100)
-    cache2 = np.arange(380, 480)
-    cache3 = np.arange(495, 595)
-    cache = np.array([cache1, cache2, cache3])
-    np.savetxt(cache_tmpfile[0], cache)
-
-    sample_sizes = [400, 90, 10]
-    inputs = np.arange(500).reshape(-1, 1)
-
-    test_inputs, cache_sample_sizes, indicies = \
-        MLMCSimulator._compare_inputs_to_cache(sample_sizes, inputs,
-                                               cache_tmpfile[0])
-    
-    assert np.array_equal(test_inputs[:300].flatten(), np.arange(100, 400))
-    assert np.array_equal(test_inputs[300:310].flatten(), np.arange(480, 490))
-    assert cache_sample_sizes == [100, 80, 5]
-
-
-
-def test_remove_unused_cached_outputs(cache_tmpfile):
-    cache1 = np.arange(200).reshape(-1, 1)
-    cache = np.array([cache1, cache1, cache1]).reshape(3, -1)
-    np.savetxt(cache_tmpfile[0], cache)
-    indicies = [np.arange(100), np.arange(50), np.arange(25)]
-    MLMCSimulator._remove_unused_cached_outputs(cache_tmpfile[0], indicies)
-    
-    test_outputs1 = np.genfromtxt('level0_cache.txt')
-    test_outputs1 = np.sort(test_outputs1)
-
-    test_outputs2 = np.genfromtxt('level1_cache.txt')
-    test_outputs2 = np.sort(test_outputs2)
-
-    test_outputs3 = np.genfromtxt('level2_cache.txt')
-    test_outputs3 = np.sort(test_outputs3)
-
-    assert np.array_equal(test_outputs1, np.arange(100))
-    assert np.array_equal(test_outputs2, np.arange(50))
-    assert np.array_equal(test_outputs3, np.arange(25))
-
-    for i in range(3):
-        os.remove('level%s_cache.txt' % i)
-
-
-# def test_setup_modular_cache(cache_tmpfile):
-#     cache1 = np.arange(100).reshape(-1, 1)
-#     cache2 = np.arange(100, 200).reshape(-1, 1)
-#     cache3 = np.arange(150, 250).reshape(-1, 1)
-#     cache = np.array([cache1, cache2, cache3]).reshape(3, -1)
-#     np.savetxt(cache_tmpfile[1], cache)
-#     output_cache1 = np.arange(200)
-#     output_caches = \
-#         np.array([output_cache1, output_cache1, output_cache1]).reshape(3, -1)
-#     np.savetxt(cache_tmpfile[0], output_caches)
-#     sample_sizes = [500, 50, 10]
-#     inputs = np.arange(300)
-
-#     test_inputs, cache_sample_sizes = \
-#         MLMCSimulator._setup_modular_cache(sample_sizes, inputs,
-#                                            cache_tmpfile)
-#     test_outputs1 = np.genfromtxt('level0_cache.txt')
-#     test_outputs2 = np.genfromtxt('level1_cache.txt')
-#     test_outputs3 = np.genfromtxt('level2_cache.txt')
-
-#     assert np.array_equal(test_inputs.ravel(), np.arange(160, 300))
-#     assert cache_sample_sizes == [100, 50, 10]
-#     assert np.array_equal(test_outputs1, np.arange(100))
-#     assert np.array_equal(test_outputs2, np.arange(100, 150))
-#     assert np.array_equal(test_outputs3, np.arange(150, 160))
-
-#     for i in range(3):
-#         os.remove('level%s_cache.txt' % i)
-
-
-
-def test_modular_compute_costs_and_variances_cache_file(dummy_arange_simulator):
-    """
-    Ensuress the compute_costs_and_variances() method is correctly calling the
-    _write_cache_to_file() method.
-    """
+def test_modular_costs_and_variances_cache(dummy_arange_simulator):
     sim = dummy_arange_simulator
-    sim.compute_costs_and_variances(10, True)
-    inputs = np.arange(10)
+    user_sample_size = 10
+    cache = True
 
-    cached_inputs = np.genfromtxt('cache_inputs.txt')
-
-    assert np.array_equal(cached_inputs[0], inputs)
-
-    os.remove('cache_inputs.txt')
-    os.remove('cache_outputs.txt')
+    sim.compute_costs_and_variances(user_sample_size, cache)
     
+    file_name = 'mlmc_cache.hdf5'
+    h5 = h5py.File(file_name, 'r')
+
+    assert np.array_equal(h5['cache_inputs']['level0'][()].flatten(),
+                          np.arange(10))
+
+    os.remove(file_name)
 
 def test_modular_compute_optimal_sample_sizes_models(spring_mlmc_simulator):
     """
@@ -765,6 +653,21 @@ def test_simple_get_model_inputs_4D(dummy_arange_simulator):
     assert np.array_equal(inputs["level3"].flatten(), np.arange(11,13))
 
 
+def test_get_model_inputs_cache(dummy_arange_simulator, tmpdir):
+    p = tmpdir.mkdir('sub')
+    sim = dummy_arange_simulator
+    cache_path = str(p.join('test_cache.hdf5'))
+    test_inputs = [np.arange(100)]
+    test_outputs = [np.arange(125)]
+    HDF5Storage.write_cache_to_hdf5(cache_path, test_inputs, test_outputs)
+    sample_sizes = np.array([125])
+    
+    inputs = \
+        sim.get_model_inputs_to_run_for_each_level(sample_sizes, cache_path)
+
+    assert np.array_equal(inputs['level0'], np.arange(100, 125))
+
+
 def test_get_model_inputs_param_exceptions(spring_mlmc_simulator):
     """
     Ensures that exceptions are raised by 
@@ -1019,6 +922,26 @@ def test_load_model_outputs_for_each_level_three_outputs(spring_mlmc_simulator):
         os.remove('level%s_outputs.txt' % i)
 
 
+# def test_load_model_outputs_cache(tmpdir):
+#     cache_inputs = [np.arange(10)]
+#     cache_outputs = [np.arange(100, 150)]
+
+#     HDF5Storage.write_cache_to_hdf5(True, cache_inputs, cache_outputs)
+#     data = [np.arange(100)]
+
+#     for i in range(len(data)):
+#         np.savetxt('level%s_outputs.txt' % i, data[i])
+
+#     outputs_dict = \
+#         MLMCSimulator.load_model_outputs_for_each_level(cache=True)
+
+#     assert outputs_dict == (1)
+
+#     for i in range(len(data)):
+#         os.remove('level%s_outputs.txt' % i)
+#     os.remove('mlmc_cache.hdf5')
+
+
 def test_load_model_outputs_for_each_level_return_type(spring_mlmc_simulator):
     """
     Ensures that load_model_outputs_for_each_level() is correctly loading data 
@@ -1060,117 +983,10 @@ def test_load_model_outputs_for_each_level_custom_fname(spring_mlmc_simulator):
         os.remove('level%s.txt' % i)
 
 
-def test_load_model_outputs_merge_cache():
-    """
-    Ensures that load_model_outputs_for_each_level() is properly accessing the
-    _merge_cache_output() method.
-    """
-    file_paths = ['level0_outputs.txt',
-                  'level1_outputs.txt',
-                  'level2_outputs.txt',
-                  'level0_cache.txt',
-                  'level1_cache.txt',
-                  'level2_cache.txt']
-
-    np.savetxt(file_paths[0], np.arange(0, 5))
-    np.savetxt(file_paths[1], np.arange(5, 10))
-    np.savetxt(file_paths[2], np.arange(10, 15))
-    np.savetxt(file_paths[3], np.arange(15, 20))
-    np.savetxt(file_paths[4], np.arange(20, 25))
-    np.savetxt(file_paths[5], np.arange(25, 30))
-
-    expected_output0 = np.array([15,16,17,18,19, 0,1,2,3,4])
-    expected_output1 = np.array([20,21,22,23,24,5,6,7,8,9])
-    expected_output2 = np.array([25,26,27,28,29,10,11,12,13,14])
-
-    merged_output = \
-        MLMCSimulator.load_model_outputs_for_each_level(cache_enabled=True)
-
-    assert np.array_equal(merged_output['level0'], expected_output0)
-    assert np.array_equal(merged_output['level1'], expected_output1)
-    assert np.array_equal(merged_output['level2'], expected_output2)
-
-    for i in range(3):
-        os.remove('level%s_outputs.txt' % i)
-        os.remove('level%s_cache.txt' % i)
-
-
-def test_load_model_outputs_merge_cache_custom_files(tmpdir):
-    """
-    Ensures that load_model_outputs_for_each_level() is properly accessing the
-    _merge_cache_output() method.
-    """
-    p = tmpdir.mkdir('sub')
-    file_paths = ['level0_outputs.txt',
-                  'level1_outputs.txt',
-                  'level2_outputs.txt']
-
-    files = [str(p.join('cache01_outputs.txt')),
-             str(p.join('cache03_outputs.txt')),
-             str(p.join('cache02_outputs.txt'))]
-
-    np.savetxt(file_paths[0], np.arange(0, 5))
-    np.savetxt(file_paths[1], np.arange(5, 10))
-    np.savetxt(file_paths[2], np.arange(10, 15))
-    np.savetxt(files[0], np.arange(15, 20))
-    np.savetxt(files[1], np.arange(20, 25))
-    np.savetxt(files[2], np.arange(25, 30))
-
-    expected_output0 = np.array([15,16,17,18,19, 0,1,2,3,4])
-    expected_output1 = np.array([20,21,22,23,24,5,6,7,8,9])
-    expected_output2 = np.array([25,26,27,28,29,10,11,12,13,14])
-
-    merged_output = \
-        MLMCSimulator.load_model_outputs_for_each_level(cache_enabled=True,
-                                                        merged_cache=files)
-
-    assert np.array_equal(merged_output['level0'], expected_output0)
-    assert np.array_equal(merged_output['level1'], expected_output1)
-    assert np.array_equal(merged_output['level2'], expected_output2)
-
-    for i in range(3):
-        os.remove('level%s_outputs.txt' % i)
-
-
 def test_load_model_outputs_for_each_level_exception():
     """
     Ensures that load_model_outputs_for_each_level() throws its exceptions.
     """
     with pytest.raises(TypeError):
         MLMCSimulator.load_model_outputs_for_each_level('Not an Integer.')
-
-
-def test_merge_model_output_with_cache():
-    """
-    Ensures that merge_model_output_with_cache() is properly merging the user
-    evaluated outputs with the cache created by compute_costs_and_variances().
-    """
-    fname = 'level0_cache.txt'
-    np.savetxt(fname, np.arange(11))
-    outputs = np.arange(11, 21)
-
-    merged_outputs = MLMCSimulator._merge_cache_output(outputs, 0)
-    merged_outputs = np.sort(merged_outputs)
-
-    assert np.array_equal(merged_outputs, np.arange(21))
-    assert np.mean(merged_outputs) == 10
-
-    os.remove(fname)
-
-
-def test_merge_model_output_with_cache_custom_files(tmpdir):
-    """
-    Ensures that merge_model_output_with_cache() is properly merging the user
-    evaluated outputs with the cache created by compute_costs_and_variances().
-    """
-    p = tmpdir.mkdir('sub')
-    fname = [str(p.join('level0_cache.txt'))]
-    np.savetxt(fname[0], np.arange(11))
-    outputs = np.arange(11, 21)
-
-    merged_outputs = MLMCSimulator._merge_cache_output(outputs, 0, fname)
-    merged_outputs = np.sort(merged_outputs)
-
-    assert np.array_equal(merged_outputs, np.arange(21))
-    assert np.mean(merged_outputs) == 10
 
