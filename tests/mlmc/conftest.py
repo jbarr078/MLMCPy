@@ -204,3 +204,15 @@ def cache_tmpfile(tmpdir):
     input_path = str(p.join('cache_inputs.txt'))
     paths = [output_path, input_path]
     return paths
+
+
+@pytest.fixture
+def temp_files(tmpdir):
+    p = tmpdir.mkdir('sub')
+    path0 = str(p.join('level0.txt'))
+    path1 = str(p.join('level1.txt'))
+    path2 = str(p.join('level2.txt'))
+    path3 = str(p.join('level3.txt'))
+    path4 = str(p.join('level4.txt'))
+
+    return [path0, path1, path2, path3, path4]

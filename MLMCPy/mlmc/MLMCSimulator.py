@@ -3,9 +3,8 @@ from datetime import timedelta
 import timeit
 import numpy as np
 
-from MLMCPy.input import Input
-from MLMCPy.model import Model
 from MLMCPy.hdf5 import HDF5Storage
+from MLMCPy.exceptionmanager import ExceptionManager
 
 class MLMCSimulator(object):
     """
@@ -24,9 +23,9 @@ class MLMCSimulator(object):
         # Detect whether we have access to multiple CPUs.
         self.__detect_parallelization()
 
-        self._check_init_parameters(random_input, models)
+        ExceptionManager.check_init_parameters(random_input, models)
 
-        self._data = random_input
+        self._random_input = random_input
         self._models = models
         self._num_levels = len(self._models)
 
@@ -90,7 +89,7 @@ class MLMCSimulator(object):
         """
         self._verbose = verbose and self._cpu_rank == 0
 
-        self._check_simulate_parameters(target_cost)
+        ExceptionManager.check_simulate_parameters(target_cost)
 
         self._process_target_cost(target_cost)
 
@@ -115,6 +114,7 @@ class MLMCSimulator(object):
 
         if user_sample_size is not None:
             user_samples = self._verify_sample_sizes(user_sample_size)
+            self._determine_input_output_size()
             self._initialize_cache(user_samples)
         else:
             self._initialize_cache()
@@ -149,7 +149,8 @@ class MLMCSimulator(object):
 
         return costs, variances
 
-    def compute_optimal_sample_sizes(self, costs, variances, user_epsilon=None):
+    def compute_optimal_sample_sizes(self, costs, variances, user_epsilon=None,
+                                     target_cost=None):
         """
         Computes the sample size for each level to be used in simulation.
 
@@ -164,6 +165,8 @@ class MLMCSimulator(object):
 
         if user_epsilon is not None:
             self._process_epsilon(user_epsilon)
+        elif target_cost is not None:
+            self._process_target_cost(target_cost)
 
         mu = self._compute_mu(costs, variances)
 
@@ -181,7 +184,7 @@ class MLMCSimulator(object):
 
             self._show_time_estimate(estimated_runtime)
 
-        if user_epsilon is not None:
+        if (user_epsilon, target_cost) is not None:
             return self._sample_sizes
 
         return None
@@ -196,10 +199,10 @@ class MLMCSimulator(object):
         :return: A dictionary with model inputs.
         :rtype: dict
         """
-        self._check_get_model_inputs_to_run_for_each_level_params(sample_sizes)
-        self._data.reset_sampling()
+        ExceptionManager.check_get_model_inputs_parameters(sample_sizes)
+        self._random_input.reset_sampling()
 
-        inputs = self._data.draw_samples(np.sum(sample_sizes))
+        inputs = self._random_input.draw_samples(np.sum(sample_sizes))
 
         if cache:
             inputs, cache_sample_sizes = \
@@ -210,8 +213,8 @@ class MLMCSimulator(object):
         inputs_dict = {}
         index_sum = 0
 
-        for level in range(len(sample_sizes)):
-            final_index = index_sum + sample_sizes[level]
+        for level, num_samples in enumerate(sample_sizes):
+            final_index = index_sum + num_samples
 
             if level != len(sample_sizes) - 1:
                 final_index += sample_sizes[level+1]
@@ -219,7 +222,7 @@ class MLMCSimulator(object):
             inputs_dict.update({'level'+str(level): \
                                 inputs[index_sum: final_index]})
 
-            index_sum += sample_sizes[level]
+            index_sum += num_samples
 
         return inputs_dict
 
@@ -249,17 +252,12 @@ class MLMCSimulator(object):
         :param filenames: Custom file names that must match the number of
             models(levels) provided.
         """
-        self._check_store_model_params(sample_sizes, filenames)
+        ExceptionManager.check_store_model_params(sample_sizes, filenames)
 
         inputs = self.get_model_inputs_to_run_for_each_level(sample_sizes,
                                                              cache)
 
-        if filenames is not None:
-            for i, key in enumerate(inputs):
-                np.savetxt('%s' % filenames[i], inputs[key])
-        else:
-            for key in inputs:
-                np.savetxt('%s_inputs.txt' % key, inputs[key])
+        self._write_to_file('_inputs.txt', filenames, len(inputs), inputs)
 
     @staticmethod
     def load_model_outputs_for_each_level(filenames=None, cache=None):
@@ -308,7 +306,7 @@ class MLMCSimulator(object):
         return outputs_dict
 
     @staticmethod
-    def compute_estimators(model_outputs):
+    def compute_estimators(model_outputs, diffs_to_file=False):
         """
         Uses the differences per level to compute the estimates and variances.
 
@@ -316,10 +314,11 @@ class MLMCSimulator(object):
         :type outputs: dict
         :return: Returns the estimates and variances as ndarrays.
         """
-        MLMCSimulator._check_compute_estimators_parameter(model_outputs)
+        ExceptionManager.check_compute_estimators_parameter(model_outputs)
 
         differences_per_level = \
-            MLMCSimulator._compute_differences_per_level(model_outputs)
+            MLMCSimulator._compute_differences_per_level(model_outputs,
+                                                         diffs_to_file)
 
         estimates = 0
         variances = 0
@@ -335,7 +334,7 @@ class MLMCSimulator(object):
         return estimates, variances
 
     @staticmethod
-    def _compute_differences_per_level(model_outputs):
+    def _compute_differences_per_level(model_outputs, write_to_file=False):
         """
         Uses model outputs to compute the differences per level, returns a list
         of arrays.
@@ -345,8 +344,7 @@ class MLMCSimulator(object):
         true_sizes = MLMCSimulator._compute_output_sample_sizes(model_outputs)
 
         for i, level in enumerate(model_outputs):
-            output_diffs = \
-                model_outputs[level][:true_sizes[i]]
+            output_diffs = model_outputs[level][:true_sizes[i]]
 
             if i > 0:
                 output_diffs = output_diffs - \
@@ -354,27 +352,46 @@ class MLMCSimulator(object):
 
             output_diffs_per_level.append(output_diffs)
 
+        if write_to_file:
+            MLMCSimulator._write_to_file('_output_diffs.txt', write_to_file,
+                                         len(output_diffs_per_level),
+                                         output_diffs_per_level)
+
         return output_diffs_per_level
+
+    @staticmethod
+    def _write_to_file(suffix, filenames, size, data):
+        """
+        Writes data to txt file, if filenames is not a list, it creates a list
+        of standardized files in form of 'levelx' + suffix.
+        """
+        if not isinstance(filenames, list):
+            filenames = []
+
+            for i in range(size):
+                filenames.append('level%s' % i + suffix)
+
+        for i, values in enumerate(data.values()) if isinstance(data, dict) \
+            else enumerate(data):
+
+            np.savetxt('%s' % filenames[i], values)
 
     @staticmethod
     def _compute_output_sample_sizes(model_outputs):
         """
-        Computes the actual sample sizes for each model level and returns in a
-        list.
+        Computes the actual sample sizes for each model level and returns list.
         """
         sizes = []
-        temp_size = 0
+        updated_size = 0
 
         output_list = list(value for value in model_outputs.values())
 
         for i in reversed(range(len(output_list))):
-            temp_size = len(output_list[i]) - temp_size
+            updated_size = len(output_list[i]) - updated_size
 
-            sizes.append(temp_size)
+            sizes.append(updated_size)
 
-        sizes = sizes[::-1]
-
-        return sizes
+        return sizes[::-1]
 
     def _setup_simulation(self, epsilon, initial_sample_sizes, sample_sizes):
         """
@@ -601,7 +618,7 @@ class MLMCSimulator(object):
         """
         # Sampling needs to be restarted from beginning due to sampling
         # having been performed in setup phase.
-        self._data.reset_sampling()
+        self._random_input.reset_sampling()
 
         start_time = timeit.default_timer()
         estimates, variances = self._run_simulation_loop()
@@ -742,7 +759,7 @@ class MLMCSimulator(object):
         Runs first model on a small test sample to determine
         shapes of input and output.
         """
-        self._data.reset_sampling()
+        self._random_input.reset_sampling()
         test_sample = self._draw_samples(self._num_cpus)
 
         if test_sample.shape[0] == 0:
@@ -752,7 +769,7 @@ class MLMCSimulator(object):
             raise ValueError(message)
 
         test_sample = test_sample[0]
-        self._data.reset_sampling()
+        self._random_input.reset_sampling()
 
         test_output = self._models[0].evaluate(test_sample)
 
@@ -829,7 +846,7 @@ class MLMCSimulator(object):
         :param num_samples: Total number of samples to draw over all CPUs.
         :return: ndarray of samples sliced according to number of CPUs.
         """
-        samples = self._data.draw_samples(num_samples)
+        samples = self._random_input.draw_samples(num_samples)
         if self._num_cpus == 1:
             return samples
 
@@ -945,105 +962,3 @@ class MLMCSimulator(object):
         time_delta = timedelta(seconds=seconds)
 
         print 'Estimated simulation time: %s' % str(time_delta)
-
-    @staticmethod
-    def _check_init_parameters(data, models):
-        """
-        Inspects parameters given to init method.
-
-        :param data: Input object provided to init().
-        :param models: Model object provided to init().
-        """
-        if not isinstance(data, Input):
-            raise TypeError("data must inherit from Input class.")
-
-        if not isinstance(models, list):
-            raise TypeError("models must be a list of models.")
-
-        # Reset sampling in case input data is used more than once.
-        data.reset_sampling()
-
-        # Ensure all models have the same output dimensions.
-        output_sizes = []
-        test_sample = data.draw_samples(1)[0]
-        data.reset_sampling()
-
-        for model in models:
-            if not isinstance(model, Model):
-                raise TypeError("models must be a list of models.")
-
-            test_output = model.evaluate(test_sample)
-            output_sizes.append(test_output.size)
-
-        output_sizes = np.array(output_sizes)
-        if not np.all(output_sizes == output_sizes[0]):
-            raise ValueError("All models must return the same output " +
-                             "dimensions.")
-
-    @staticmethod
-    def _check_simulate_parameters(target_cost):
-        """
-        Inspects parameters to simulate method.
-
-        :param target_cost: float or int specifying desired simulation cost.
-        """
-        if target_cost is not None:
-
-            if not isinstance(target_cost, (int, float)):
-
-                raise TypeError('maximum cost must be an int or float.')
-
-            if target_cost <= 0:
-                raise ValueError("maximum cost must be greater than zero.")
-
-    @staticmethod
-    def _check_get_model_inputs_to_run_for_each_level_params(sample_sizes):
-        """
-        Inspects parameters in get_model_inputs_to_run_for_each_level().
-
-        :param sample_sizes: List or np.ndarray of int specifying the number of
-            sample sizes.
-        """
-        if not isinstance(sample_sizes, (list, np.ndarray)):
-            raise TypeError('sample_sizes must be a list or np.ndarray.')
-
-        for level in range(len(sample_sizes)):
-            if not isinstance(sample_sizes[level], int):
-                raise TypeError('sample_sizes[%s] must be an int.' % level)
-
-    @staticmethod
-    def _check_store_model_params(sample_sizes, filenames=None):
-        """
-        Inspects parameters in store_model_inputs_to_run_for_each_level().
-
-        :param sample_sizes: List or np.ndarray of int specifying the number of
-            sample sizes.
-        :param filenames: Object that must contain strings of desired file names
-            it must match the number of models(levels).
-        """
-        if not isinstance(sample_sizes, (list, np.ndarray)):
-            raise TypeError('sample_sizes must be a list or np.ndarray.')
-
-        for level in range(len(sample_sizes)):
-            if not isinstance(sample_sizes[level], int):
-                raise TypeError('sample_sizes[%s] must be an int.' % level)
-
-        if filenames is not None:
-            for name in range(len(filenames)):
-                if not isinstance(filenames[name], str):
-                    raise TypeError('filenames[%s] must be a string.' % name)
-
-    @staticmethod
-    def _check_compute_estimators_parameter(model_outputs):
-        """
-        Inspects parameter given to compute_estimators(), and ensures that it
-        is a np.ndarray.
-        """
-        if not isinstance(model_outputs, dict):
-            raise TypeError('model_outputs must be a dictionary of output' +
-                            'numpy arrays.')
-
-        for key in model_outputs:
-            if not isinstance(model_outputs[key], np.ndarray):
-                raise TypeError('model_outputs must be a dictionary of output' +
-                                'numpy arrays.')
