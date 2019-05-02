@@ -79,6 +79,12 @@ MLMCPy can also be installed using the `git clone` command:
 git clone https://github.com/nasa/MLMCPy.git
 ```
 
+MLMCPy can also be installed using the `conda install` command:
+
+```
+conda install -c jmbarrie mlmcpy
+```
+
 The best way to get started with MLMCPy is to take a look at the scripts in the examples/ directory. A simple example of propagating uncertainty through a spring mass system can be found in the ``examples/spring_mass/from_model`` directory. There is a second example that demonstrates the case where a user has access to input-output data from multiple levels of models (rather than a model they can directly evaluate) in the ``examples/spring_mass/from_data/`` directory. For more information, see the source code documentation in ``docs/MLMCPy_documentation.pdf`` (a work in progress).
 
 Tests
