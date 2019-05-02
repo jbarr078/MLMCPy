@@ -3,7 +3,7 @@ from datetime import timedelta
 import timeit
 import numpy as np
 
-from MLMCPy.exceptionmanager import ExceptionManager
+from MLMCPy.utils import ExceptionManager
 
 class MLMCSimulator(object):
     """
