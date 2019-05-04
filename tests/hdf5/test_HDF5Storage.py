@@ -3,7 +3,7 @@ import pytest
 import h5py
 import numpy as np
 
-from MLMCPy.hdf5 import HDF5Storage
+from MLMCPy.utils import HDF5Storage
 
 
 @pytest.fixture

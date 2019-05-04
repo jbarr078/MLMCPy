@@ -3,8 +3,7 @@ from datetime import timedelta
 import timeit
 import numpy as np
 
-from MLMCPy.hdf5 import HDF5Storage
-from MLMCPy.utils import ExceptionManager
+from MLMCPy.utils import ExceptionManager, HDF5Storage
 
 class MLMCSimulator(object):
     """

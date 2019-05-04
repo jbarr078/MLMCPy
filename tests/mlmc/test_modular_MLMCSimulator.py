@@ -15,7 +15,7 @@ if 'PYTHONPATH' not in os.environ:
 from MLMCPy.mlmc import MLMCSimulator
 from MLMCPy.input import RandomInput, InputFromData
 from MLMCPy.model import ModelFromData
-from MLMCPy.hdf5 import HDF5Storage
+from MLMCPy.utils import HDF5Storage
 from tests.testing_scripts import SpringMassModel
 
 # Create list of paths for each data file.

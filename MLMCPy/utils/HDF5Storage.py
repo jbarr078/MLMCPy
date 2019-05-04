@@ -42,7 +42,9 @@ class HDF5Storage(object):
         cache_sample_sizes = []
 
         for i in range(len(sample_sizes)):
-            indices.append(np.where(inputs[i].flatten() == cache_inputs[i].reshape(-1, 1)))
+            indices.append(np.where(inputs[i].flatten() == \
+                cache_inputs[i].reshape(-1, 1)))
+
             cache_sample_sizes.append(len(indices[i][1]))
 
         updated_inputs = HDF5Storage._delete_inputs(inputs, indices)
