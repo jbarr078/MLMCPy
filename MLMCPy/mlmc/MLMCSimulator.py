@@ -4,7 +4,7 @@ import timeit
 import numpy as np
 
 from MLMCPy.hdf5 import HDF5Storage
-from MLMCPy.exceptionmanager import ExceptionManager
+from MLMCPy.utils import ExceptionManager
 
 class MLMCSimulator(object):
     """
